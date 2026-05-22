@@ -2,11 +2,43 @@ import Fastify, { type FastifyInstance } from "fastify";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import sensible from "@fastify/sensible";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 
+import { createOpaqueService } from "./auth/opaque.js";
+import { createChallengeService } from "./auth/challenges.js";
+import { createLoginRateLimiter } from "./auth/ratelimit.js";
+import { createSessionService } from "./auth/sessions.js";
 import type { Config } from "./config/env.js";
+import { authRoutes } from "./routes/auth.js";
 import { healthRoutes } from "./routes/health.js";
+import { createAuditLogger } from "./store/audit.js";
+import { migrate, openStore } from "./store/db.js";
+import { createUserRepo } from "./store/users.js";
 
-export async function buildApp(config: Config): Promise<FastifyInstance> {
+export interface AppOptions {
+  /** Override migrations directory (for tests). */
+  migrationsDir?: string;
+}
+
+export async function buildApp(
+  config: Config,
+  options: AppOptions = {},
+): Promise<FastifyInstance> {
+  // Ensure data dir exists for file-backed DBs.
+  if (config.databasePath !== ":memory:") {
+    mkdirSync(path.dirname(path.resolve(config.databasePath)), { recursive: true });
+  }
+  const store = openStore(config.databasePath);
+  migrate(store.db, options.migrationsDir);
+
+  const opaque = await createOpaqueService(store.db);
+  const users = createUserRepo(store.db);
+  const sessions = createSessionService(store.db);
+  const challenges = createChallengeService(store.db);
+  const ratelimitLogin = createLoginRateLimiter(store.db);
+  const audit = createAuditLogger(store.db);
+
   const app = Fastify({
     logger: {
       level: config.logLevel,
@@ -52,9 +84,38 @@ export async function buildApp(config: Config): Promise<FastifyInstance> {
   });
 
   await app.register(healthRoutes);
+  await app.register(async (instance) => {
+    await authRoutes(instance, {
+      opaque,
+      users,
+      sessions,
+      challenges,
+      rateLimit: ratelimitLogin,
+      audit,
+      hmacKey: config.serverHmacKey,
+    });
+  });
 
   app.setNotFoundHandler((_req, reply) => {
     reply.code(404).send({ error: "not_found" });
+  });
+
+  app.addHook("onClose", async () => {
+    store.close();
+  });
+
+  // Purge expired sessions/challenges/login_attempts on a schedule.
+  const purgeTimer = setInterval(() => {
+    try {
+      sessions.purgeExpired();
+      challenges.purgeExpired();
+      ratelimitLogin.purgeOld();
+    } catch (err) {
+      app.log.warn({ err }, "background purge failed");
+    }
+  }, 60_000).unref();
+  app.addHook("onClose", async () => {
+    clearInterval(purgeTimer);
   });
 
   return app;
