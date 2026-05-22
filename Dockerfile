@@ -8,6 +8,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm install --no-audit --no-fund
 COPY tsconfig.json ./
 COPY src ./src
+COPY scripts ./scripts
 RUN npm run build && npm prune --omit=dev
 # A skeleton /data owned by the distroless nonroot UID (65532). Docker
 # initialises a freshly-created named volume from the image's contents
@@ -26,6 +27,7 @@ ENV NODE_ENV=production \
 COPY --from=build --chown=nonroot:nonroot /app/node_modules ./node_modules
 COPY --from=build --chown=nonroot:nonroot /app/dist ./dist
 COPY --from=build --chown=nonroot:nonroot /app/package.json ./package.json
+COPY --from=build --chown=nonroot:nonroot /app/src/admin-ui/static ./src/admin-ui/static
 COPY --chown=nonroot:nonroot migrations ./migrations
 COPY --from=build --chown=nonroot:nonroot /opt/data-skeleton /data
 
