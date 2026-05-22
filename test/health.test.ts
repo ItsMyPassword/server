@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { FastifyInstance } from "fastify";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { buildApp } from "../src/app.js";
 import type { Config } from "../src/config/env.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MIGRATIONS_DIR = path.resolve(__dirname, "..", "migrations");
 
 const testConfig: Config = {
   port: 0,
@@ -18,7 +23,7 @@ describe("health", () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    app = await buildApp(testConfig);
+    app = await buildApp(testConfig, { migrationsDir: MIGRATIONS_DIR });
   });
 
   afterAll(async () => {
