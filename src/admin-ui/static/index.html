@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ItsMyPassword — Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("theme");
+          var dark =
+            saved !== null
+              ? saved === "dark"
+              : window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <strong>ItsMyPassword</strong>
+        <span class="brand-suffix">Admin</span>
+      </div>
+      <div class="topbar-right">
+        <span id="who" class="who"></span>
+        <button id="theme-toggle" class="btn-ghost icon-btn" title="Thème" aria-label="Basculer le thème">
+          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="M10 3a7 7 0 1 0 6.93 8 5.5 5.5 0 0 1-6.93-6.93A7 7 0 0 0 10 3z"
+            />
+          </svg>
+        </button>
+        <button id="logout-btn" class="btn-ghost" hidden>Se déconnecter</button>
+      </div>
+    </header>
+
+    <main class="container">
+      <!-- LOADING -->
+      <section id="view-loading" class="card center">
+        <p class="muted">Chargement…</p>
+      </section>
+
+      <!-- SETUP : premier admin -->
+      <section id="view-setup" hidden>
+        <h1>Bienvenue.</h1>
+        <p class="lead">
+          Cette installation n'a pas encore d'administrateur. Crée le tien
+          ci-dessous. Ce compte servira à approuver les utilisateurs qui
+          demandent à synchroniser leur extension sur ce serveur.
+        </p>
+        <div class="card">
+          <form id="setup-form">
+            <label>
+              <span>Nom d'utilisateur</span>
+              <input type="text" id="setup-username" autocomplete="username" minlength="3" maxlength="64" required />
+            </label>
+            <label>
+              <span>Mot de passe</span>
+              <input type="password" id="setup-password" autocomplete="new-password" minlength="8" required />
+              <small class="muted">Choisis un mot de passe long et unique. Il sera traité par OPAQUE : le serveur ne le verra jamais en clair, même pendant que tu le tapes.</small>
+            </label>
+            <label>
+              <span>Confirme le mot de passe</span>
+              <input type="password" id="setup-password-2" autocomplete="new-password" required />
+            </label>
+            <p id="setup-error" class="error" hidden></p>
+            <div class="actions">
+              <button type="submit" id="setup-submit" class="btn-primary">Créer mon compte admin</button>
+            </div>
+          </form>
+        </div>
+        <p class="hint">
+          Une fois ton compte créé, le setup est verrouillé : plus personne
+          ne pourra ouvrir cet écran.
+        </p>
+      </section>
+
+      <!-- LOGIN -->
+      <section id="view-login" hidden>
+        <h1>Connexion administrateur</h1>
+        <p class="lead muted">Identifie-toi pour voir les demandes en attente.</p>
+        <div class="card">
+          <form id="login-form">
+            <label>
+              <span>Nom d'utilisateur</span>
+              <input type="text" id="login-username" autocomplete="username" required />
+            </label>
+            <label>
+              <span>Mot de passe</span>
+              <input type="password" id="login-password" autocomplete="current-password" required />
+            </label>
+            <p id="login-error" class="error" hidden></p>
+            <div class="actions">
+              <button type="submit" id="login-submit" class="btn-primary">Se connecter</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" hidden>
+        <div class="row-between">
+          <div>
+            <h1>Tableau de bord</h1>
+            <p class="lead muted">Approuve ou refuse les utilisateurs qui veulent se synchroniser sur ce serveur.</p>
+          </div>
+          <button id="refresh-btn" class="btn-ghost">Rafraîchir</button>
+        </div>
+
+        <section class="card">
+          <header class="section-header">
+            <h2>Demandes en attente</h2>
+            <span id="pending-count" class="badge">0</span>
+          </header>
+          <ul id="pending-list" class="pending-list">
+            <li class="muted center">Chargement…</li>
+          </ul>
+        </section>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span>ItsMyPassword Server — Admin</span>
+    </footer>
+
+    <!-- bundled OPAQUE client + admin page controller -->
+    <script type="module" src="./admin.js"></script>
+  </body>
+</html>

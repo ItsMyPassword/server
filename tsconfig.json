@@ -21,5 +21,11 @@
     "sourceMap": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "src/admin-ui/client",
+    "src/admin-ui/static"
+  ]
 }

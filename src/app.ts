@@ -27,6 +27,7 @@ import { createLoginRateLimiter, type LoginRateLimiter } from "./auth/ratelimit.
 import { createSessionService, type SessionService } from "./auth/sessions.js";
 import type { Config } from "./config/env.js";
 import { adminRoutes } from "./routes/admin.js";
+import { adminUiRoutes } from "./routes/admin-ui.js";
 import { authRoutes } from "./routes/auth.js";
 import { healthRoutes } from "./routes/health.js";
 import { syncRoutes } from "./routes/sync.js";
@@ -177,6 +178,9 @@ export async function buildApp(
         audit: services.audit,
         hmacKey: config.serverHmacKey,
       });
+    });
+    await app.register(async (instance) => {
+      await adminUiRoutes(instance);
     });
   }
 
